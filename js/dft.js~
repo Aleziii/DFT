@@ -1,0 +1,127 @@
+var xn, xdados;
+//Adotando-se o teorema de Nyquist de 4*f
+var gmagnitude = document.getElementById("magnitude");
+var gphase = document.getElementById("phase");
+
+function calcula(){
+	var dadosMagnitude = [], labels = [], dadosPhase = [], dados = [];
+	var f = document.getElementById("frequencia").value;
+	var N = document.getElementById("qpontos").value;
+	var funcao = document.getElementById("funcao").value;
+	var ts = 1.0/(4*f), fs = 1.0/ts, scope = {n : 0, ts};
+	var i = 0; //iterar valores de x[n]
+	
+	//Apagar outros gráficos já calculados
+	var x =	document.getElementsByTagName("iframe");
+	x.outerHTML = "";
+	delete x;
+
+	for(m = 0; m < N; m++){
+		real = 0; img = 0;
+		for(n = 0; n < N; n++){
+			scope.n = n; //Atualizacao do valor de n para o mathjs
+			xn = math.eval(funcao, scope);
+
+			if(i < N){
+			//Valores de x[n] 
+				xdados = math.eval(funcao, scope);
+				dados.push(Math.round(xdados*10000)/10000);
+				i++;
+			}
+
+			real += xn * Math.cos(2*Math.PI*n*m/N);
+			img += -1 * xn * Math.sin(2*Math.PI*n*m/N);	
+		}
+		if (real > -0.0001 && real < 0.0001) real = 0.0;
+		if (img > -0.0001 && img < 0.0001) img = 0.0;
+
+
+		//Calculo da frequencia
+		labels.push(m*fs/N);
+
+		dadosMagnitude.push(Math.round(magnitude(real,img)*10000)/10000);
+		dadosPhase.push(Math.round(phase(real,img)*10000)/10000);
+	}
+
+	//Impressao do array
+	dados.forEach(function(valor,index){
+				console.log(valor, index);
+			});
+
+	//Gráficos
+	var conf1 = configuracoes("Magnitude", "Gráfico da Magnitude", dadosMagnitude, labels, 'rgb(255, 159, 64)');
+	var conf2 = configuracoes("Fase", "Gráfico de Fase", dadosPhase, labels, 'rgb(54, 162, 235)');
+	var graficoMagnitude = new Chart(gmagnitude, conf1);
+	var graficoPhase = new Chart(gphase, conf2);
+
+	//Bloqueio de botao
+	//document.getElementById("btnCalcula").disabled = true;
+}
+
+function magnitude(x, y){
+	var mag;
+	return Math.sqrt((Math.pow(x,2))+(Math.pow(y,2)));
+}
+
+function phase(x, y){
+	var phase;
+	phase = Math.atan(y/x);
+	phase = (phase*180)/Math.PI;
+	return Number.isNaN(phase) ? 0.0 : phase;
+}
+
+function limpar(){
+	document.getElementById("funcao").value = "";
+	document.getElementById("qpontos").value = "";
+}
+
+function configuracoes(nome, titulo, dados, labels, cor){
+       return {
+       	type: 'line',
+		    data: {
+		        labels: labels,
+		        datasets: [{
+		            label: nome,
+		            data: dados,
+		            backgroundColor: cor,
+		            borderColor: cor,
+		            fill: false,
+		            pointRadius: 10,
+		            pointHoverRadius: 15,
+		            showLine: false // no line shown
+		        }]
+		    },
+		    options: {
+		    	responsive: true,
+		                legend: {
+		                    position: 'top',
+		                },
+		                hover: {
+		                    mode: 'index'
+		                },
+		                scales: {
+		                    xAxes: [{
+		                        display: true,
+		                        scaleLabel: {
+		                            display: true,
+		                            labelString: 'Frequência (Hz)'
+		                        }
+		                    }],
+		                    yAxes: [{
+		                        display: true,
+		                        scaleLabel: {
+		                            display: true,
+		                            labelString: nome
+		                        },
+			                      ticks: {
+			                      beginAtZero:true
+			                      }
+		                    }]
+		                },
+		                title: {
+		                    display: true,
+		                    text: titulo
+		                }
+		            }
+		       }
+}
